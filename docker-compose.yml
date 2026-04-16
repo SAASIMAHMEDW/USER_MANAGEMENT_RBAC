@@ -39,14 +39,14 @@ services:
       - MONGO_URI=mongodb://mongodb:27017/usermgmt
       - JWT_ACCESS_SECRET=${JWT_ACCESS_SECRET:-your-super-secret-access-key-change-in-production}
       - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-your-super-secret-refresh-key-change-in-production}
-      - CLIENT_ORIGIN=http://localhost:5173
+      - CLIENT_ORIGIN=http://localhost
     depends_on:
       mongodb:
         condition: service_healthy
     networks:
       - purple-merit-network
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/api/users/me"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
       interval: 30s
       timeout: 10s
       retries: 3

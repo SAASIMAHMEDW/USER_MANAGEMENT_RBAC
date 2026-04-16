@@ -6,6 +6,7 @@ import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import { env } from './config/env';
 import { errorHandler } from './shared/middlewares/errorHandler';
+import { connectDB } from './config/db';
 import authRoutes from './features/auth/auth.routes';
 import userRoutes from './features/users/user.routes';
 
@@ -30,6 +31,19 @@ const authLimiter = rateLimit({
 });
 
 app.use('/api/auth', authLimiter);
+
+app.get('/health', (_req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+app.get('/health/ready', async (_req, res) => {
+  try {
+    await connectDB();
+    res.status(200).json({ status: 'ready', database: 'connected' });
+  } catch (error) {
+    res.status(503).json({ status: 'not ready', database: 'disconnected' });
+  }
+});
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
