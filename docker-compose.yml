@@ -27,8 +27,8 @@ services:
   # Backend Server
   server:
     build:
-      context: ..
-      dockerfile: server/Dockerfile
+      context: ./server
+      dockerfile: Dockerfile
     container_name: purple-merit-server
     restart: unless-stopped
     ports:
@@ -55,14 +55,14 @@ services:
   # Frontend Client
   client:
     build:
-      context: ..
-      dockerfile: client/Dockerfile
+      context: ./client
+      dockerfile: Dockerfile
     container_name: purple-merit-client
     restart: unless-stopped
     ports:
       - "80:80"
     environment:
-      - VITE_API_URL=http://localhost:5000/api
+      - VITE_API_URL=http://server:5000/api
     depends_on:
       - server
     networks:
