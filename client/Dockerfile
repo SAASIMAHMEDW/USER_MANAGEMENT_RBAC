@@ -1,0 +1,35 @@
+# Build stage
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy package files
+COPY client/package.json client/pnpm-lock.yaml* ./
+
+# Install dependencies
+RUN corepack enable && pnpm install --frozen-lockfile
+
+# Copy source code
+COPY client/ ./
+
+# Build the application
+RUN pnpm run build
+
+# Production stage - Nginx
+FROM nginx:alpine AS production
+
+# Copy custom nginx config
+COPY client/nginx.conf /etc/nginx/conf.d/default.conf
+
+# Copy built static files
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Expose port
+EXPOSE 80
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:80 || exit 1
+
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]
