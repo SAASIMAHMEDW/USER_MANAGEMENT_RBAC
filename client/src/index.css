@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-velvet-black text-showroom-white font-body antialiased;
+  }
+  
+  * {
+    @apply border-silver-mist/30;
+  }
+  
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px #000000 inset !important;
+    -webkit-text-fill-color: #ffffff !important;
+  }
+}
+
+@layer components {
+  .bugatti-heading {
+    @apply font-display text-white;
+  }
+  
+  .bugatti-mono {
+    @apply font-mono uppercase tracking-widest;
+  }
+  
+  .bugatti-border {
+    @apply border border-silver-mist;
+  }
+}
