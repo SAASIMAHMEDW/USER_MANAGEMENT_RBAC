@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import request from 'supertest';
-import app from './app';
-import { User } from '../features/users/user.model';
-import { connectDB, disconnectDB } from '../config/db';
+import app from '../src/app';
+import { User } from '../src/features/users/user.model';
+import { connectDB, disconnectDB } from '../src/config/db';
 
 const TEST_MONGO_URI = process.env.TEST_MONGO_URI || 'mongodb://localhost:27017/usermgmt-test';
 
