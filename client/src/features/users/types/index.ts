@@ -5,7 +5,9 @@ export interface User {
   role: 'admin' | 'manager' | 'user';
   status: 'active' | 'inactive';
   createdAt?: string;
+  created_at?: string;
   updatedAt?: string;
+  updated_at?: string;
   createdBy?: { _id: string; name: string; email: string } | null;
   updatedBy?: { _id: string; name: string; email: string } | null;
 }

@@ -83,7 +83,11 @@ export const ProfilePage: React.FC = () => {
             <div>
               <p className="font-mono text-micro uppercase tracking-widest text-silver-mist mb-1">Member Since</p>
               <p className="font-body text-sm sm:text-body text-white">
-                {profile.createdAt ? formatDate(profile.createdAt) : '-'}
+                {profile.createdAt 
+                  ? formatDate(profile.createdAt) 
+                  : profile.created_at 
+                    ? formatDate(profile.created_at) 
+                    : '-'}
               </p>
             </div>
           </div>
