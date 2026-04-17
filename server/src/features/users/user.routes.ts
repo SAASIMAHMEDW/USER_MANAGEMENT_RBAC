@@ -6,6 +6,7 @@ import {
   createUserValidator,
   updateUserValidator,
   updateProfileValidator,
+  idParamValidator,
 } from './user.validation';
 import {
   getAllUsersController,
@@ -58,6 +59,8 @@ router.get(
   '/:id',
   authenticate,
   authorize([ROLES.ADMIN, ROLES.MANAGER]),
+  idParamValidator,
+  validate,
   getUserByIdController
 );
 
@@ -65,6 +68,8 @@ router.put(
   '/:id',
   authenticate,
   authorize([ROLES.ADMIN, ROLES.MANAGER]),
+  idParamValidator,
+  validate,
   updateUserValidator,
   validate,
   updateUserController
@@ -74,6 +79,8 @@ router.delete(
   '/:id',
   authenticate,
   authorize([ROLES.ADMIN]),
+  idParamValidator,
+  validate,
   deleteUserController
 );
 

@@ -1,5 +1,11 @@
-import { body } from 'express-validator';
+import { body, param } from 'express-validator';
 import { ROLES } from '../../shared/constants/roles';
+
+export const idParamValidator = [
+  param('id')
+    .isMongoId()
+    .withMessage('Invalid user ID format'),
+];
 
 export const createUserValidator = [
   body('name')
