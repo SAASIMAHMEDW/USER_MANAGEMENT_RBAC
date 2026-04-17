@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { profileService } from '../services/profile.service';
+import { useProfileService } from '../services/profile.service';
 import { User } from '../../users/types';
 
 interface UseProfileReturn {
@@ -16,20 +16,22 @@ export const useProfile = (): UseProfileReturn => {
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  const { getProfile, updateProfile: updateProfileApi } = useProfileService();
 
   const fetchProfile = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await profileService.getProfile();
+      const response = await getProfile();
       setProfile(response.data.user);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to fetch profile');
+      setError(err.message || 'Failed to fetch profile');
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [getProfile]);
 
   useEffect(() => {
     fetchProfile();
@@ -40,10 +42,10 @@ export const useProfile = (): UseProfileReturn => {
     setError(null);
 
     try {
-      await profileService.updateProfile(data);
+      await updateProfileApi(data);
       await fetchProfile();
     } catch (err: any) {
-      const message = err.response?.data?.message || 'Failed to update profile';
+      const message = err.message || 'Failed to update profile';
       setError(message);
       throw new Error(message);
     } finally {

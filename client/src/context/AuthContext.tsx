@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback, useRef } from 'react';
 import { AuthState, AuthAction } from '../shared/types';
-import { createAxiosInstance } from '../shared/utils/axios.instance';
 import axios from 'axios';
 
 interface AuthContextType extends AuthState {
@@ -47,18 +46,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
-  const apiRef = useRef<ReturnType<typeof createAxiosInstance> | null>(null);
   const refreshPromiseRef = useRef<Promise<boolean> | null>(null);
-
-  const clearAuth = useCallback(() => {
-    dispatch({ type: 'CLEAR_AUTH' });
-  }, []);
-
-  const getAccessToken = useCallback(() => state.accessToken, [state.accessToken]);
-
-  useEffect(() => {
-    apiRef.current = createAxiosInstance(getAccessToken, clearAuth);
-  }, [getAccessToken, clearAuth]);
 
   const attemptRefresh = useCallback(async (): Promise<boolean> => {
     if (refreshPromiseRef.current) {
@@ -73,6 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           { withCredentials: true }
         );
         const { accessToken } = response.data.data;
+        
         const userResponse = await axios.get(
           `${import.meta.env.VITE_API_URL}/users/me`,
           {

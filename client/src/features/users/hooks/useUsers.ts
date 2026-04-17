@@ -1,7 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { usersService } from '../services/users.service';
+import { useState, useEffect, useCallback } from 'react';
+import { useUsersService } from '../services/users.service';
 import { User, UsersResponse } from '../types';
-import { useAuth } from '../../../context/AuthContext';
 
 interface UseUsersParams {
   page?: number;
@@ -22,50 +21,45 @@ interface UseUsersReturn {
 }
 
 export const useUsers = (params: UseUsersParams = {}): UseUsersReturn => {
+  const { getUsers } = useUsersService();
   const [users, setUsers] = useState<User[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(params.page || 1);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { accessToken } = useAuth();
-  const paramsRef = useRef(params);
 
   useEffect(() => {
-    paramsRef.current = params;
     if (params.page !== undefined) {
       setCurrentPage(params.page);
     }
   }, [params.page]);
 
   const fetchUsers = useCallback(async () => {
-    if (!accessToken) return;
-
     setIsLoading(true);
     setError(null);
 
     try {
-      const currentParams = paramsRef.current;
       const queryParams: Record<string, unknown> = {
-        page: currentParams.page || currentPage,
+        page: params.page || currentPage,
         limit: 10,
       };
 
-      if (currentParams.role) queryParams.role = currentParams.role;
-      if (currentParams.status) queryParams.status = currentParams.status;
-      if (currentParams.search) queryParams.search = currentParams.search;
+      if (params.role) queryParams.role = params.role;
+      if (params.status) queryParams.status = params.status;
+      if (params.search) queryParams.search = params.search;
 
-      const response: UsersResponse = await usersService.getUsers(queryParams as Record<string, string>);
+      const response: UsersResponse = await getUsers(queryParams as Record<string, string>);
       setUsers(response.data.users);
       setTotal(response.data.total);
       setTotalPages(response.data.totalPages);
     } catch (err: unknown) {
-      const errorObj = err as { response?: { data?: { message?: string } } };
-      setError(errorObj.response?.data?.message || 'Failed to fetch users');
+      const errorObj = err as { message?: string };
+      setError(errorObj.message || 'Failed to fetch users');
     } finally {
       setIsLoading(false);
     }
-  }, [accessToken, currentPage]);
+  }, [getUsers, currentPage, params.role, params.status, params.search, params.page]);
 
   useEffect(() => {
     fetchUsers();

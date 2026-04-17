@@ -1,16 +1,18 @@
 import { Response } from 'express';
 import { AuthRequest } from '../../shared/types';
-import { login, refresh, register } from './auth.service';
+import { login, refresh, register, logout } from './auth.service';
 import { successResponse, AppError } from '../../shared/utils/response.utils';
 import { asyncHandler } from '../../shared/utils/asyncHandler';
 import { env } from '../../config/env';
+
+const REFRESH_TOKEN_COOKIE = 'refreshToken';
 
 export const registerController = asyncHandler(
   async (req: AuthRequest, res: Response): Promise<void> => {
     const { name, email, password, role } = req.body;
     const result = await register(name, email, password, role);
 
-    res.cookie('refreshToken', result.refreshToken, {
+    res.cookie(REFRESH_TOKEN_COOKIE, result.refreshToken, {
       httpOnly: true,
       sameSite: 'strict',
       secure: env.NODE_ENV === 'production',
@@ -20,7 +22,7 @@ export const registerController = asyncHandler(
     successResponse(res, {
       accessToken: result.accessToken,
       user: result.user,
-    }, 'Registration successful');
+    }, 'Registration successful', 201);
   }
 );
 
@@ -29,7 +31,7 @@ export const loginController = asyncHandler(
     const { email, password } = req.body;
     const result = await login(email, password);
 
-    res.cookie('refreshToken', result.refreshToken, {
+    res.cookie(REFRESH_TOKEN_COOKIE, result.refreshToken, {
       httpOnly: true,
       sameSite: 'strict',
       secure: env.NODE_ENV === 'production',
@@ -52,13 +54,25 @@ export const refreshController = asyncHandler(
     }
 
     const result = await refresh(refreshToken);
-    successResponse(res, { accessToken: result.accessToken });
+
+    res.cookie(REFRESH_TOKEN_COOKIE, result.refreshToken, {
+      httpOnly: true,
+      sameSite: 'strict',
+      secure: env.NODE_ENV === 'production',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    successResponse(res, {
+      accessToken: result.accessToken,
+    });
   }
 );
 
 export const logoutController = asyncHandler(
-  async (_req: AuthRequest, res: Response): Promise<void> => {
-    res.clearCookie('refreshToken');
-    successResponse(res, undefined, 'Logged out');
+  async (req: AuthRequest, res: Response): Promise<void> => {
+    const refreshToken = req.cookies.refreshToken;
+    await logout(refreshToken);
+    res.clearCookie(REFRESH_TOKEN_COOKIE);
+    successResponse(res, undefined, 'Logged out successfully');
   }
 );

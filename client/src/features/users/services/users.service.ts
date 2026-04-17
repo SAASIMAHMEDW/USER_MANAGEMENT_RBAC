@@ -1,62 +1,75 @@
-import axios from 'axios';
+import { useAuth } from '../../../context/AuthContext';
+import { useCallback } from 'react';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-export const usersService = {
-  async getUsers(params: Record<string, any> = {}) {
-    const response = await axios.get(`${API_URL}/users`, {
-      params,
-      withCredentials: true,
-    });
-    return response.data;
-  },
+export const useUsersService = () => {
+  const { accessToken } = useAuth();
 
-  async getUserById(id: string) {
-    const response = await axios.get(`${API_URL}/users/${id}`, {
-      withCredentials: true,
+  const request = useCallback(async (
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+    path: string,
+    data?: any
+  ) => {
+    const response = await fetch(`${API_URL}${path}`, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      },
+      credentials: 'include',
+      body: data ? JSON.stringify(data) : undefined,
     });
-    return response.data;
-  },
 
-  async createUser(data: any) {
-    const response = await axios.post(`${API_URL}/users`, data, {
-      withCredentials: true,
-    });
-    return response.data;
-  },
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Request failed' }));
+      throw new Error(error.message);
+    }
 
-  async updateUser(id: string, data: any) {
-    const response = await axios.put(`${API_URL}/users/${id}`, data, {
-      withCredentials: true,
-    });
-    return response.data;
-  },
+    return response.json();
+  }, [accessToken]);
 
-  async deleteUser(id: string) {
-    const response = await axios.delete(`${API_URL}/users/${id}`, {
-      withCredentials: true,
-    });
-    return response.data;
-  },
+  const getUsers = useCallback(async (params: Record<string, any> = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    return request('GET', `/users${queryString ? `?${queryString}` : ''}`);
+  }, [request]);
 
-  async getProfile() {
-    const response = await axios.get(`${API_URL}/users/me`, {
-      withCredentials: true,
-    });
-    return response.data;
-  },
+  const getUserById = useCallback(async (id: string) => {
+    return request('GET', `/users/${id}`);
+  }, [request]);
 
-  async updateProfile(data: any) {
-    const response = await axios.put(`${API_URL}/users/me`, data, {
-      withCredentials: true,
-    });
-    return response.data;
-  },
+  const createUser = useCallback(async (data: any) => {
+    return request('POST', '/users', data);
+  }, [request]);
 
-  async getStats() {
-    const response = await axios.get(`${API_URL}/users/stats`, {
-      withCredentials: true,
-    });
-    return response.data;
-  },
+  const updateUser = useCallback(async (id: string, data: any) => {
+    return request('PUT', `/users/${id}`, data);
+  }, [request]);
+
+  const deleteUser = useCallback(async (id: string) => {
+    return request('DELETE', `/users/${id}`);
+  }, [request]);
+
+  const getProfile = useCallback(async () => {
+    return request('GET', '/users/me');
+  }, [request]);
+
+  const updateProfile = useCallback(async (data: any) => {
+    return request('PUT', '/users/me', data);
+  }, [request]);
+
+  const getStats = useCallback(async () => {
+    return request('GET', '/users/stats');
+  }, [request]);
+
+  return {
+    getUsers,
+    getUserById,
+    createUser,
+    updateUser,
+    deleteUser,
+    getProfile,
+    updateProfile,
+    getStats,
+  };
 };

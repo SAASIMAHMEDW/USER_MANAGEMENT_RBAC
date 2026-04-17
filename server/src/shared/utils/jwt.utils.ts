@@ -8,6 +8,7 @@ interface AccessTokenPayload {
 
 interface RefreshTokenPayload {
   id: string;
+  tokenId: string;
 }
 
 export const signAccessToken = (payload: AccessTokenPayload): string => {
@@ -44,4 +45,8 @@ export const verifyRefreshToken = (token: string): RefreshTokenPayload => {
     }
     throw error;
   }
+};
+
+export const generateTokenId = (): string => {
+  return jwt.sign({}, env.JWT_REFRESH_SECRET, { expiresIn: '1h' });
 };

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { usersService } from '../../users/services/users.service';
+import { useUsersService } from '../../users/services/users.service';
 import { User } from '../../users/types';
 import { Button } from '../../../shared/components/ui/Button';
 import { Badge } from '../../../shared/components/ui/Badge';
@@ -9,6 +9,7 @@ import { Spinner } from '../../../shared/components/ui/Spinner';
 import { formatDate } from '../../../shared/utils/format.utils';
 
 export const AdminDashboard: React.FC = () => {
+  const { getStats, getUsers } = useUsersService();
   const [stats, setStats] = useState({
     total: 0,
     active: 0,
@@ -22,11 +23,11 @@ export const AdminDashboard: React.FC = () => {
     const fetchStats = async () => {
       try {
         const [statsResponse, usersResponse] = await Promise.all([
-          usersService.getStats(),
-          usersService.getUsers({ limit: 5 }),
+          getStats(),
+          getUsers({ limit: 5 }),
         ]);
-        setStats(statsResponse.data.data);
-        setRecentUsers(usersResponse.data.data.users);
+        setStats(statsResponse.data);
+        setRecentUsers(usersResponse.data.users);
       } catch (err: any) {
         console.error('Failed to fetch stats:', err);
       } finally {
@@ -35,7 +36,7 @@ export const AdminDashboard: React.FC = () => {
     };
 
     fetchStats();
-  }, []);
+  }, [getStats, getUsers]);
 
   if (isLoading) {
     return (

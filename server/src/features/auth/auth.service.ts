@@ -1,12 +1,13 @@
 import { User, IUser } from '../users/user.model';
+import { RefreshToken, IRefreshToken } from './refreshToken.model';
 import {
   signAccessToken,
   signRefreshToken,
   verifyRefreshToken,
+  generateTokenId,
 } from '../../shared/utils/jwt.utils';
 import { AppError } from '../../shared/utils/response.utils';
 import { Role, ROLES } from '../../shared/constants/roles';
-import { hashPassword } from '../../shared/utils/password.utils';
 
 interface LoginResult {
   accessToken: string;
@@ -24,7 +25,55 @@ interface LoginResult {
 
 interface RefreshResult {
   accessToken: string;
+  refreshToken: string;
 }
+
+const createRefreshToken = async (userId: string): Promise<string> => {
+  const tokenId = generateTokenId();
+  const refreshToken = signRefreshToken({ id: userId, tokenId });
+  
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + 7);
+
+  await RefreshToken.create({
+    userId: userId,
+    token: refreshToken,
+    expiresAt,
+    revoked: false,
+  });
+
+  return refreshToken;
+};
+
+const validateRefreshToken = async (refreshToken: string): Promise<IRefreshToken> => {
+  const decoded = verifyRefreshToken(refreshToken);
+  
+  const storedToken = await RefreshToken.findOne({
+    token: refreshToken,
+    userId: decoded.id,
+  });
+
+  if (!storedToken) {
+    throw new AppError('Invalid refresh token', 401);
+  }
+
+  if (storedToken.revoked) {
+    throw new AppError('Refresh token has been revoked', 401);
+  }
+
+  if (storedToken.isExpired()) {
+    throw new AppError('Refresh token has expired', 401);
+  }
+
+  return storedToken;
+};
+
+const revokeRefreshToken = async (tokenId: string): Promise<void> => {
+  await RefreshToken.findOneAndUpdate(
+    { token: tokenId },
+    { revoked: true }
+  );
+};
 
 export const login = async (
   email: string,
@@ -47,9 +96,7 @@ export const login = async (
   }
 
   const accessToken = signAccessToken({ id: user._id.toString(), role: user.role as Role });
-  const refreshToken = signRefreshToken({ id: user._id.toString() });
-
-  const userResponse = user.toJSON();
+  const refreshToken = await createRefreshToken(user._id.toString());
 
   return {
     accessToken,
@@ -66,26 +113,12 @@ export const login = async (
   };
 };
 
-interface RegisterResult {
-  accessToken: string;
-  refreshToken: string;
-  user: {
-    _id: string;
-    name: string;
-    email: string;
-    role: Role;
-    status: string;
-    createdAt?: Date;
-    updatedAt?: Date;
-  };
-}
-
 export const register = async (
   name: string,
   email: string,
   password: string,
   role?: Role
-): Promise<RegisterResult> => {
+): Promise<LoginResult> => {
   const existingUser = await User.findOne({ email });
 
   if (existingUser) {
@@ -103,7 +136,7 @@ export const register = async (
   });
 
   const accessToken = signAccessToken({ id: user._id.toString(), role: user.role as Role });
-  const refreshToken = signRefreshToken({ id: user._id.toString() });
+  const refreshToken = await createRefreshToken(user._id.toString());
 
   return {
     accessToken,
@@ -122,7 +155,9 @@ export const register = async (
 
 export const refresh = async (refreshToken: string): Promise<RefreshResult> => {
   try {
+    const storedToken = await validateRefreshToken(refreshToken);
     const decoded = verifyRefreshToken(refreshToken);
+    
     const user = await User.findById(decoded.id);
 
     if (!user) {
@@ -133,13 +168,34 @@ export const refresh = async (refreshToken: string): Promise<RefreshResult> => {
       throw new AppError('Account is deactivated', 403);
     }
 
-    const accessToken = signAccessToken({
+    await revokeRefreshToken(refreshToken);
+
+    const newAccessToken = signAccessToken({
       id: user._id.toString(),
       role: user.role as Role,
     });
 
-    return { accessToken };
-  } catch {
-    throw new AppError('Invalid refresh token', 401);
+    const newRefreshToken = await createRefreshToken(user._id.toString());
+
+    return { accessToken: newAccessToken, refreshToken: newRefreshToken };
+  } catch (error) {
+    throw new AppError('Invalid or expired refresh token', 401);
   }
+};
+
+export const logout = async (refreshToken?: string): Promise<void> => {
+  if (refreshToken) {
+    try {
+      const decoded = verifyRefreshToken(refreshToken);
+      await revokeRefreshToken(refreshToken);
+    } catch {
+    }
+  }
+};
+
+export const revokeAllUserTokens = async (userId: string): Promise<void> => {
+  await RefreshToken.updateMany(
+    { userId, revoked: false },
+    { revoked: true }
+  );
 };

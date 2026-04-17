@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { usersService } from '../services/users.service';
+import { useUsersService } from '../services/users.service';
 import { User } from '../types';
-import { useAuth } from '../../../context/AuthContext';
 
 interface UseUserDetailReturn {
   user: User | null;
@@ -11,26 +10,26 @@ interface UseUserDetailReturn {
 }
 
 export const useUserDetail = (userId: string): UseUserDetailReturn => {
+  const { getUserById } = useUsersService();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { accessToken } = useAuth();
 
   const fetchUser = useCallback(async () => {
-    if (!accessToken || !userId) return;
+    if (!userId) return;
 
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await usersService.getUserById(userId);
+      const response = await getUserById(userId);
       setUser(response.data.user);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to fetch user');
+      setError(err.message || 'Failed to fetch user');
     } finally {
       setIsLoading(false);
     }
-  }, [accessToken, userId]);
+  }, [userId, getUserById]);
 
   useEffect(() => {
     fetchUser();
