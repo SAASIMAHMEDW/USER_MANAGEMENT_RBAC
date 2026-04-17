@@ -23,4 +23,5 @@ if (!result.success) {
   process.exit(1);
 }
 
-export const env = result.data;
+type EnvSchema = z.infer<typeof envSchema>;
+export const env: EnvSchema = result.data;
