@@ -54,11 +54,6 @@ export const UsersPage: React.FC = () => {
     setIsEditOpen(true);
   };
 
-  const handleDelete = (user: User) => {
-    setSelectedUser(user);
-    setIsDeleteOpen(true);
-  };
-
   const handleCreate = async (data: any) => {
     const result = await createUser(data);
     await refetch();
